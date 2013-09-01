@@ -1,3 +1,4 @@
+
 War
 ---
 
@@ -7,9 +8,11 @@ War
 It uses a standard [French playing card deck][].
 Due to its simplicity, it is played most often by children.
 
-	# add a new shuffled standard deck to the game scope
-	# the deck will be accessible via game.deck
-	game.createDeck().shuffle()
+```coffee
+# add a new shuffled standard deck to the game scope
+# the deck will be accessible via game.deck
+game.createDeck().shuffle()
+```
 
 ### Gameplay
 
@@ -18,19 +21,21 @@ Due to its simplicity, it is played most often by children.
 The deck is divided evenly among the two players, giving each a down stack.
 In unison, each player reveals the top card of their deck - this is called, a **_battle_**.
 
-	# add 2 new card piles to each player
-	for p in [player, opponent]
-		p.createPile   name: 'down'
-		p.createPile   name: 'battle'
-		
-	# dealing just 10 cards to each player
-		game.deck.moveTo(p.down,10)
-				
-	# dealing all cards from deck to each player
-	# it's commented out because it's not fun to play the all deck...
-	#deal
-	#	from: game.deck
-	#	to: [player.down, opponent.down]
+```coffee
+# add 2 new card piles to each player
+for p in [player, opponent]
+	p.createPile   name: 'down'
+	p.createPile   name: 'battle'
+	
+# dealing just 10 cards to each player
+	game.deck.moveTo(p.down,10)
+			
+# dealing all cards from deck to each player
+# it's commented out because it's not fun to play the all deck...
+#deal
+#	from: game.deck
+#	to: [player.down, opponent.down]
+```
 
 #### Battle
 
@@ -46,55 +51,73 @@ If the two cards played are of equal value, then there is a **_war_**:
 
 If a player runs out of cards after a battle or during a war that player immediately loses.
 
-	mainGameLoop = ->
-		# wait until every player perform the "battle!" action
-		action 'Battle!', ->
-			# move the top card from each player down pile to battle pile
+```coffee
+mainGameLoop = ->
+	# wait until every player perform the "battle!" action
+	action 'Battle!', ->
+		# move the top card from each player down pile to battle pile
+		for p in [player, opponent]
+			p.down.top().flip()
+			p.down.moveTo(p.battle, 1)		
+		# check if we have a war
+		while (pV=player.battle.top().value.rank) is (oV=opponent.battle.top().value.rank) 
 			for p in [player, opponent]
+				# end the game if one of the player don't have enough cards for war
+				if p.down.size() < 4 then return "end"
+				# move 3 faced-down and 1 face-up card to the battle pile
+				p.down.moveTo(p.battle, 3)
 				p.down.top().flip()
-				p.down.moveTo(p.battle, 1)		
-			# check if we have a war
-			while (pV=player.battle.top().value.rank) is (oV=opponent.battle.top().value.rank) 
-				for p in [player, opponent]
-					# end the game if one of the player don't have enough cards for war
-					if p.down.size() < 4 then return "end"
-					# move 3 faced-down and 1 face-up card to the battle pile
-					p.down.moveTo(p.battle, 3)
-					p.down.top().flip()
-					p.down.moveTo(p.battle, 1)
-			# determine the winner of the battle		
-			[battleWinner, battleLoser] = if pV > oV then [player, opponent] else [opponent, player]
-			# end the game if the loser don't have any more cards
-			if battleLoser.down.isEmpty() then return "end"
-			# move the battle cards to the winner
-			battleLoser.battle.moveTo(battleWinner.battle, battleLoser.battle.size())
-			battleWinner.battle.flipDown().shuffle().moveTo(battleWinner.down, battleWinner.battle.size())
-			
-			mainGameLoop()
+				p.down.moveTo(p.battle, 1)
+		# determine the winner of the battle		
+		[battleWinner, battleLoser] = if pV > oV then [player, opponent] else [opponent, player]
+		# end the game if the loser don't have any more cards
+		if battleLoser.down.isEmpty() then return "end"
+		# move the battle cards to the winner
+		battleLoser.battle.moveTo(battleWinner.battle, battleLoser.battle.size())
+		battleWinner.battle.flipDown().shuffle().moveTo(battleWinner.down, battleWinner.battle.size())
 		
-	mainGameLoop()
+		mainGameLoop()
+	
+mainGameLoop()
+```
 
-#### Layout
+### Metadata
+
+The game is played by two players
+
+```INI
+number of players = 2
+```
+
+### Layout
 
 The player's piles are on the left and the opponent piles are on the right.
 I the middle there is a button that triggers the battle action.
 
-	@layout = '''
-		.container
-			.row
-				.col-5
-					pile(container="player", name="battle")
-				.col-2
-					action(name="Battle!")
-				.col-5
-					pile.pull-right(container="opponent", name="battle")
-			br
-			.row
-				.col-5
-					pile(container="player", name="down")
-				.col-7
-					pile.pull-right(container="opponent", name="down")
-	'''	
+```HTML
+<div class="container">
+	<div class="row">
+		<div class="col-5">
+			<pile container="player" name="battle" />
+		</div>
+		<div class="col-2">
+			<action name="Battle!" />
+		</div>
+		<div class="col-5">
+			<pile class="pull-right" container="opponent" name="battle" />
+		</div>
+	</div>
+	<br/>
+	<div class="row">
+		<div class="col-5">
+			<pile container="player" name="down" />
+		</div>
+		<div class="col-7">
+			<pile class="pull-right" container="opponent" name="down" />
+		</div>
+	</div>
+</div>
+```
 
 ### See also
 
@@ -106,3 +129,4 @@ I the middle there is a button that triggers the battle action.
 [Wikipedia]: http://en.wikipedia.org/wiki/War_%28card_game%29
 [card game]: http://en.wikipedia.org/wiki/Card_game
 [French playing card deck]: http://en.wikipedia.org/wiki/Playing_card#French_design
+
